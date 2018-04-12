@@ -2,7 +2,8 @@
 
 from enum import Enum
 
-Code = Enum('Code', ('Variable', 'int', '*', "=", '#'))
+Code = Enum('Code', ('Variable', 'int', '*', '=', '#', 'e'))
+Action = Enum('Action', ('Recuce', 'Shift', 'Acc'))
 
 class Rule:
     def __init__(self, L, R):
@@ -12,6 +13,14 @@ class Rule:
         for i in R:
             print(i, end=' ')
         print(']')
+    def __str__(self):
+        res = ""
+        res += str(self.L) + " --> ["
+        for i in self.R:
+            res += str(i)
+            res += ' '
+        res += ']'
+        return res
 
 class Element:
     def __init__(self, name):
@@ -23,13 +32,14 @@ class Element:
                 if code.name == name[1:-1]:
                     self.code = code
     def __str__(self):
-        return str((self.code, self.name))
+        return str(self.name)
     def __hash__(self):
-        return self.name
+        return hash(self.name)
     def __eq__(self, other):
         return self.name == other.name
 
 class ContextFreeLanguage:
+
 
     def __init__(self):
         self.rules = []
@@ -37,6 +47,8 @@ class ContextFreeLanguage:
         self.elements = []
         self.starter = ""
         self.ender = ""
+        self.first = {}
+        self.empty = Element('"e"')
 
     def addElement(self, eleStr):
         if eleStr not in self.elementsDict:
@@ -51,7 +63,7 @@ class ContextFreeLanguage:
                 j = i + 1
                 while strL[j] != ']':
                     j += 1
-                L = strL[i:j+1]
+                L = self.addElement(strL[i:j+1])
 
         R = []
         i = 0
@@ -81,6 +93,41 @@ class ContextFreeLanguage:
         print(self.ender)
         return self.ender
 
+    def getFirst(self, l):
+        emptiable = True
+        firstSet = set()
+        for i in l:
+            if not emptiable:
+                break
+            firstSet |= self.first[i]
+            if self.empty not in self.first[i]:
+                emptiable = False
+        if emptiable:
+            firstSet.add(self.empty)
+        return firstSet
+
+    def initFirst(self):
+        for ele in self.elements:
+            if ele == self.empty:
+                self.first[ele] = set({empty})
+            elif ele.code == Code.Variable:
+                self.first[ele] = set()
+            else:
+                self.first[ele] = {ele}
+        while True:
+            newItem = False
+            for r in self.rules:
+                tmp = self.getFirst(r.R)
+                if not self.first[r.L].issuperset(tmp):
+                    self.first[r.L] |= tmp
+                    newItem = True
+            if not newItem:
+                break
+        # for ele in self.elements:
+        #     print("First of ", ele, end=': ')
+        #     for i in self.first[ele]:
+        #         print(i, end = ' ')
+        #     print()
     '''
     Item is a tuple:
     (A->x.By, a) := ((A->xBy), 1, a)
@@ -88,24 +135,77 @@ class ContextFreeLanguage:
 
     def closure(self, I):
         C = set(I)
-        newItem = True
-        while newItem:
-            flag = False
+        while True:
+            D = set()
             for c in C:
-                if c[0].R[c[1]].code != Code.Variable:
+                if c[1] >= len(c[0].R) or c[0].R[c[1]].code != Code.Variable:
                     continue
-                f = first(c[0].R[c[1]+1:].append(c[2]))
-                for r in rules:
-                    if r.L == c:
-                        for b in f:
-                            if (r, 0, b) not in C:
-                                flag = True
-                                C.add((r, 0, b))
-            newItem = flag
+                if c[1] < len(c[0].R) and c[0].R[c[1]].code == Code.Variable:
+                    slice = c[0].R[c[1]+1:]
+                    slice.append(c[2])
+                    f = self.getFirst(slice)
+
+                    B = c[0].R[c[1]]
+                    for r in self.rules:
+                        if r.L == B:
+                            for b in f:
+                                if (r, 0, b) not in C:
+                                    newItem = True
+                                    D.add((r, 0, b))
+            if D == set():
+                break
+            else:
+                C |= D
         return frozenset(C)
 
-    def init(self):
+
+    def go(self, I, X):
+        J = set()
+        for c in I:
+            if c[1] < len(c[0].R) and c[0].R[c[1]] == X:
+                J.add((c[0], c[1]+1, c[2]))
+        return self.closure(frozenset(J))
+
+
+    def printClosure(self, C):
+        #print(type(C))
+        print("Closure of " + str(self.C[C]) + ":", end=" {\n")
+        for c in C:
+            print("(", c[0], c[1], c[2], end ='), \n')
+        print("}")
+
+
+    def initClan(self):
+        def printClan(clan):
+            for C in clan:
+                print("Closure of " + str(clan[C]) + ":", end=" {\n")
+                for c in C:
+                    print("(", c[0], c[1], c[2], end ='), \n')
+                print("}")
+        self.C = {self.closure(frozenset({(self.rules[-1], 0, self.ender)})):0}
+        while True:
+            D = set()
+            for I in self.C:
+                for X in self.elements:
+                    if X != self.empty:
+                        cand = self.go(I, X)
+                        if len(cand) != 0 and cand not in self.C:
+                            D.add(cand)
+
+            if len(D) == 0:
+                break
+            else:
+                for d in D:
+                    self.C[d] = len(self.C)
+        printClan(self.C)
+
+    def initActionGoto(self):
         pass
+
+    def init(self):
+        self.initFirst()
+        self.initClan()
+        self.initActionGoto()
 
     def parse(self, sentence):
         i = 0
@@ -143,6 +243,8 @@ if __name__ == "__main__" :
     cfl.addRule("[S_p]", "[S]")
     cfl.addStarter("[S_p]")
     cfl.addEnder('"#"')
+
+    cfl.init()
 
     testFile = open("test_file.g", "r")
     while True:
