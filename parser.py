@@ -1,9 +1,11 @@
 # -*- coding: utf-8 -*-
 
 from enum import Enum
+from scanner import Code, Element
 
-Code = Enum('Code', ('Variable', 'int', '*', '=', '#', 'e'))
 Action = Enum('Action', ('Reduce', 'Shift', 'Acc'))
+
+
 
 class Rule:
     def __init__(self, L, R):
@@ -22,25 +24,7 @@ class Rule:
         res += ']'
         return res
 
-class Element:
-    def __init__(self, name):
-        self.name = name
-        if name[0] == '[':
-            self.code = Code.Variable
-        elif name[0] == '"':
-            for code in Code:
-                if code.name == name[1:-1]:
-                    self.code = code
-    def __str__(self):
-        return str(self.name)
-    def __hash__(self):
-        return hash(self.name)
-    def __eq__(self, other):
-        return self.name == other.name
-
 class ContextFreeLanguage:
-
-
     def __init__(self):
         self.rules = []
         self.elementsDict = {}
@@ -289,7 +273,40 @@ class ContextFreeLanguage:
                 stateStack.append(self.goto[S][A])
                 print(rule)
             elif self.action[S][w][0] == Action.Acc:
+                print("OK")
                 return True
+    def onlineParse(self, token, initFlag):
+        if initFlag:
+            self.stateStack = [self.initialState]
+            self.symbolStack = [Element('"#"')]
+        w = token.elem
+        print("---------------------------")
+        print(w)
+        S = self.stateStack[-1]
+        if w not in self.action[S]:
+            print("Failed")
+            return False
+        if self.action[S][w][0] == Action.Reduce:
+            while w in self.action[S] and self.action[S][w][0] == Action.Reduce:
+                rule = self.action[S][w][1]
+                A = rule.L
+                self.stateStack = self.stateStack[:-len(rule.R)]
+                self.symbolStack = self.symbolStack[:-len(rule.R)]
+                S = self.stateStack[-1]
+                self.symbolStack.append(A)
+                self.stateStack.append(self.goto[S][A])
+                S = self.stateStack[-1]
+                print(rule)
+        S = self.stateStack[-1]
+        if self.action[S][w][0] == Action.Shift:
+            self.symbolStack.append(w)
+            self.stateStack.append(self.action[S][w][1])
+        for i in range(len(self.stateStack)):
+            self.printClosure(self.stateStack[i])
+            print(self.symbolStack[i])
+        if self.action[S][w][0] == Action.Acc:
+            print("OK")
+            return True
 
 
 if __name__ == "__main__" :
