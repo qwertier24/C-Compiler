@@ -1,5 +1,5 @@
 from scanner import Scanner
-from parser import ContextFreeLanguage
+from CFL import ContextFreeLanguage
 
 if __name__ == "__main__":
     grammarFile = open("test_grammar.g", "r")

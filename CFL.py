@@ -301,9 +301,9 @@ class ContextFreeLanguage:
         if self.action[S][w][0] == Action.Shift:
             self.symbolStack.append(w)
             self.stateStack.append(self.action[S][w][1])
-        for i in range(len(self.stateStack)):
-            self.printClosure(self.stateStack[i])
-            print(self.symbolStack[i])
+        # for i in range(len(self.stateStack)):
+        #     self.printClosure(self.stateStack[i])
+        #     print(self.symbolStack[i])
         if self.action[S][w][0] == Action.Acc:
             print("OK")
             return True
