@@ -2,7 +2,7 @@ from scanner import Scanner
 from CFL import ContextFreeLanguage
 
 if __name__ == "__main__":
-    grammarFile = open("test_grammar.g", "r")
+    grammarFile = open("changed_c.txt", "r")
     cfl = ContextFreeLanguage()
 
     while True:
@@ -18,7 +18,7 @@ if __name__ == "__main__":
 
     cfl.init()
 
-    testFile = open("test_file.g", "rb")
+    testFile = open("test_cpp.cpp", "rb")
     flag = True
     while True:
         token = Scanner.scan(testFile)

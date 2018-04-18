@@ -1,10 +1,16 @@
 from enum import Enum
 
-Code = Enum('Code', ('Variable', 'integer', '*', '=', '#',
-                     'e', '{', '}', '+', '-', '/', "identifier",
-                     'string', 'int', 'float', '"', '(', ')', 'for',
-                     'if', 'return'))
-keywords = {"int", "float", "for", "if", "return"}
+Code = Enum('Code', ('Variable',
+                     'INT10', 'INT8', 'INT16', 'FLOAT', 'CHAR', 'STR',
+                     'IDN',
+                     'int', 'char', 'float', 'void',
+                     '(', ')', '*', '=', '+', '-', '/', '%',
+                     '!', '&&', '||',
+                     '>', '>=', '<', '<=', '==', '!=', '+=', '-=', '*=', '/=', '%=',
+                     '$', '#',
+                     '{', '}', ';', ',', '[', ']', ':',
+                     '"', 'for', "continue", "break", 'if', 'return', 'else', 'switch', 'case', 'while', 'do', 'default'))
+keywords = {"int", 'char', "float", 'void', 'for', "continue", "break", 'if', 'return', 'else', 'switch', 'case', 'while', 'do', 'default'}
 
 class Element:
     def __init__(self, name):
@@ -12,6 +18,8 @@ class Element:
         if name[0] == '[':
             self.code = Code.Variable
         elif name[0] == '"':
+            if name[1:-1] not in Code.__dict__:
+                raise Exception("Not recognized element:", name)
             for code in Code:
                 if code.name == name[1:-1]:
                     self.code = code
@@ -34,8 +42,8 @@ class Scanner:
         file.seek(-1, 1)
     def getc(file):
         return str(file.read(1), encoding='utf-8')
+
     def scanIdentifier(file):
-        Scanner.goback(file)
         s = ""
         while True:
             c = Scanner.getc(file)
@@ -48,11 +56,10 @@ class Scanner:
         if s in keywords:
             return Token(Element('"' + s + '"'), s)
         else:
-            return Token(Element('"identifier"'), s)
+            return Token(Element('"IDN"'), s)
 
 
     def scanInteger(file):
-        Scanner.goback(file)
         number = 0
         while True:
             c = Scanner.getc(file)
@@ -61,7 +68,23 @@ class Scanner:
             else:
                 Scanner.goback(file)
                 break
-        return Token(Element('"integer"'), number)
+        return Token(Element('"INT10"'), number)
+
+    def scanSymbol(file):
+        symbol = ""
+        while True:
+            c = Scanner.getc(file)
+            if c == '':
+                break
+            if c not in "!,+-*/%=(){};<>|^&:\"":
+                Scanner.goback(file)
+                break
+            if (symbol+c) in Code.__dict__:
+                symbol += c
+            else:
+                Scanner.goback(file)
+                break
+        return Token(Element('"' + symbol + '"'), symbol)
 
     def scan(file):
         while True:
@@ -71,15 +94,18 @@ class Scanner:
             if c == " ":
                 continue
             if c in "+-*/=(){};<>|^&":
-                return Token(Element('"' + c + '"'), c)
+                Scanner.goback(file)
+                return Scanner.scanSymbol(file)
             elif c.isdigit():
+                Scanner.goback(file)
                 return Scanner.scanInteger(file)
             elif c.isalpha() or c == '_':
+                Scanner.goback(file)
                 return Scanner.scanIdentifier(file)
 
 
 if __name__ == "__main__":
-    f = open("test_file.g", "rb")
+    f = open("test_cpp.cpp", "rb")
     while True:
         token = Scanner.scan(f)
         print(token.elem, token.info)

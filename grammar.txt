@@ -1,0 +1,108 @@
+[S] --> [funcs]
+[S] --> [func] [funcs] 
+[funcs] --> [func] 
+[funcs] --> [func] [funcs] 
+[func] --> [type] "IDN" "(" ")" [func_body] 
+[func] --> [type] "IDN" "(" [args] ")" [func_body] 
+[type] --> "int" 
+[type] --> "char" 
+[type] --> "float" 
+[type] --> "void" 
+[args] --> [type] "IDN"
+[args] --> [type] "IDN" [arg] 
+[arg] --> "," [type] "IDN" 
+[arg] --> "," [type] "IDN" [arg] 
+[func_body] --> ";" 
+[func_body] --> [block] 
+[block] --> "{" "}" 
+[block] --> "{" [define_stmts] "}" 
+[block] --> "{" [stmts] "}" 
+[block] --> "{" [define_stmts] [stmts] "}" 
+[define_stmts] --> [define_stmt]
+[define_stmts] --> [define_stmt] [define_stmts] 
+[define_stmt] --> [type] "IDN" [init] [vars] ";"
+[define_stmt] --> [type] "IDN" [vars] ";"  
+[define_stmt] --> [type] "IDN" [init]  ";"
+[define_stmt] --> [type] "IDN" ";"  
+[init] --> "=" [expression] 
+[init] --> "[" "INT10" "]" 
+[vars] --> "," "IDN" [init] [vars] 
+[vars] --> "," "IDN" [vars] 
+[vars] --> "," "IDN" [init] 
+[vars] --> "," "IDN" 
+[stmts] --> [stmt]
+[stmts] --> [stmt] [stmts] 
+[stmt] --> [assign_stmt] 
+[stmt] --> [jump_stmt] 
+[stmt] --> [iteration_stmt] 
+[stmt] --> [branch_stmt] 
+[assign_stmt] --> [expression] ";" 
+[jump_stmt] --> "continue" ";" 
+[jump_stmt] --> "break" ";" 
+[jump_stmt] --> "return" [isnull_expr] ";" 
+[jump_stmt] --> "return" ";" 
+[iteration_stmt] --> "while" "(" [logical_expression] ")" [block_stmt] 
+[iteration_stmt] --> "for" "(" [isnull_expr] ";" [isnull_expr] ";" [isnull_expr] ")" [block_stmt] 
+[iteration_stmt] --> "do" [block_stmt] "while" "(" [logical_expression] ")" ";" 
+[branch_stmt] --> "if" "(" [logical_expression] ")" [block_stmt] [result] 
+[branch_stmt] --> "if" "(" [logical_expression] ")" [block_stmt]
+[result] --> "else" [block_stmt] 
+[logical_expression] --> "!" [expression] [bool_expression] 
+[logical_expression] --> [expression] [bool_expression] 
+[bool_expression] --> [lop] [expression] [bool_expression] 
+[logical_expression] --> "!" [expression] 
+[logical_expression] --> [expression] 
+[bool_expression] --> [lop] [expression] 
+[lop] --> "&&" 
+[lop] --> "||" 
+[block_stmt] --> "{" [stmts] "}" 
+[block_stmt] --> "{" "}" 
+[isnull_expr] --> [expression] 
+[expression] --> [value] [operation] 
+[expression] --> [value] 
+[operation] --> [compare_op] [value] 
+[operation] --> [equal_op] [value] 
+[compare_op] --> ">" 
+[compare_op] --> ">=" 
+[compare_op] --> "<" 
+[compare_op] --> "<=" 
+[compare_op] --> "==" 
+[compare_op] --> "!=" 
+[equal_op] --> "=" 
+[equal_op] --> "+=" 
+[equal_op] --> "-=" 
+[equal_op] --> "*=" 
+[equal_op] --> "/=" 
+[equal_op] --> "%=" 
+[value] --> [item] [value'] 
+[value] --> [item] 
+[value'] --> "+" [item] [value'] 
+[value'] --> "+" [item] 
+[value'] --> "-" [item] [value'] 
+[value'] --> "-" [item] 
+[item] --> [factor] [item'] 
+[item] --> [factor]
+[item'] --> "*" [factor] [item'] 
+[item'] --> "*" [factor] 
+[item'] --> "/" [factor] [item'] 
+[item'] --> "/" [factor] 
+[item'] --> "%" [factor] [item'] 
+[item'] --> "%" [factor] 
+[factor] --> "(" [value] ")"
+[factor] --> "IDN" [call_func] 
+[factor] --> "IDN" 
+[factor] --> [const] 
+[call_func] --> "(" [es] ")" 
+[call_func] --> "(" ")" 
+[es] --> [isnull_expr] [isnull_es] 
+[es] --> [isnull_expr] 
+[es] --> [isnull_es] 
+[isnull_es] --> "," [isnull_expr]
+[isnull_es] --> "," 
+[const] --> [num_const] 
+[const] --> "FLOAT" 
+[const] --> "CHAR" 
+[const] --> "STR" 
+[num_const] --> "INT10" 
+[num_const] --> "INT8" 
+[num_const] --> "INT16" 

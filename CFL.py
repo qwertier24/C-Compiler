@@ -32,7 +32,7 @@ class ContextFreeLanguage:
         self.starter = ""
         self.ender = ""
         self.first = {}
-        self.empty = Element('"e"')
+        self.empty = Element('"$"')
 
     def addElement(self, eleStr):
         if eleStr not in self.elementsDict:
@@ -93,7 +93,7 @@ class ContextFreeLanguage:
     def initFirst(self):
         for ele in self.elements:
             if ele == self.empty:
-                self.first[ele] = set({empty})
+                self.first[ele] = set({self.empty})
             elif ele.code == Code.Variable:
                 self.first[ele] = set()
             else:
@@ -107,11 +107,6 @@ class ContextFreeLanguage:
                     newItem = True
             if not newItem:
                 break
-        # for ele in self.elements:
-        #     print("First of ", ele, end=': ')
-        #     for i in self.first[ele]:
-        #         print(i, end = ' ')
-        #     print()
     '''
     Item is a tuple:
     (A->x.By, a) := ((A->xBy), 1, a)
@@ -182,7 +177,7 @@ class ContextFreeLanguage:
             else:
                 for d in D:
                     self.C[d] = len(self.C)
-        printClan(self.C)
+        # printClan(self.C)
 
     def initActionGoto(self):
         self.goto = dict()
@@ -202,22 +197,14 @@ class ContextFreeLanguage:
                         self.action[clos][a] = (Action.Shift, self.go(clos, a))
                 if self.rules[-1] == item[0] and item[1] == 1 and item[2] == Element('"#"'):
                     self.action[clos][Element('"#"')] = (Action.Acc, 0)
-            # print("Goto of", end=" ")
-            # self.printClosure(clos)
-            # for a in self.goto[clos]:
-            #     print(a, "->")
-            #     self.printClosure(self.goto[clos][a])
-            #     print()
-            # print("Action of", end=" ")
-            # self.printClosure(clos)
-            # for a in self.action[clos]:
-            #     act = self.action[clos][a]
-            #     print(a, "->", act[0])
-            #     if act[0] == Action.Reduce:
-            #         print(act[1])
-            #     elif act[0] == Action.Shift:
-            #         self.printClosure(act[1])
-            #     print()
+        # for clos in self.action:
+        #     for c in self.action[clos]:
+        #         print("action of")
+        #         print(c)
+        #         self.printClosure(clos)
+        #         print(self.action[clos][c][0])
+        #         print(self.action[clos][c][1])
+                # self.printClosure(self.action[clos][c][1])
 
 
     def init(self):
