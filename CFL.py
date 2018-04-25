@@ -67,6 +67,7 @@ class ContextFreeLanguage:
             else:
                 i += 1
         self.rules.append(Rule(L, R))
+        L.producers.append(self.rules[-1])
         return self.rules[-1]
     def addStarter(self, strL):
         self.starter = self.addElement(strL)
@@ -125,12 +126,16 @@ class ContextFreeLanguage:
                     f = self.getFirst(slice)
 
                     B = c[0].R[c[1]]
-                    for r in self.rules:
-                        if r.L == B:
-                            for b in f:
-                                if (r, 0, b) not in C:
-                                    newItem = True
-                                    D.add((r, 0, b))
+                    for r in B.producers:
+                        for b in f:
+                            if b == self.empty:
+                                raise Exception("Found empty producers in closure calculation")
+                            pos = 0
+                            while pos < len(r.R) and r.R[pos] == self.empty:
+                                pos += 1
+                            if (r, pos, b) not in C:
+                                newItem = True
+                                D.add((r, pos, b))
             if D == set():
                 break
             else:
@@ -186,13 +191,17 @@ class ContextFreeLanguage:
             self.goto[clos] = dict()
             self.action[clos] = dict()
             for var in self.elements:
-                if var.code == Code.Variable and self.go(clos, var) in self.C:
-                    self.goto[clos][var] = self.go(clos, var)
+                if var.code == Code.Variable:
+                    goto_tmp = self.go(clos, var)
+                    if goto_tmp in self.C:
+                        self.goto[clos][var] = goto_tmp
             for item in clos:
                 if item[1] >= len(item[0].R):
                     self.action[clos][item[2]] = (Action.Reduce, item[0])
                 else:
                     a = item[0].R[item[1]]
+                    if a == self.empty:
+                        raise Exception("Found empty in initActionGoto")
                     if a.code != Code.Variable:
                         self.action[clos][a] = (Action.Shift, self.go(clos, a))
                 if self.rules[-1] == item[0] and item[1] == 1 and item[2] == Element('"#"'):
@@ -204,7 +213,7 @@ class ContextFreeLanguage:
         #         self.printClosure(clos)
         #         print(self.action[clos][c][0])
         #         print(self.action[clos][c][1])
-                # self.printClosure(self.action[clos][c][1])
+        #         self.printClosure(self.action[clos][c][1])
 
 
     def init(self):
@@ -241,9 +250,9 @@ class ContextFreeLanguage:
             w = s[i]
             print(w)
             S = stateStack[-1]
-            for i in range(len(stateStack)):
-                self.printClosure(stateStack[i])
-                print(symbolStack[i])
+            for j in range(len(stateStack)):
+                self.printClosure(stateStack[j])
+                print(symbolStack[j])
             if w not in self.action[S]:
                 return False
             elif self.action[S][w][0] == Action.Shift:
@@ -253,12 +262,13 @@ class ContextFreeLanguage:
             elif self.action[S][w][0] == Action.Reduce:
                 rule = self.action[S][w][1]
                 A = rule.L
-                stateStack = stateStack[:-len(rule.R)]
-                symbolStack = symbolStack[:-len(rule.R)]
+                print("Reduce", rule)
+                if rule.R[0] != self.empty:
+                    stateStack = stateStack[:-len(rule.R)]
+                    symbolStack = symbolStack[:-len(rule.R)]
                 S = stateStack[-1]
                 symbolStack.append(A)
                 stateStack.append(self.goto[S][A])
-                print(rule)
             elif self.action[S][w][0] == Action.Acc:
                 print("OK")
                 return True
@@ -272,13 +282,15 @@ class ContextFreeLanguage:
         S = self.stateStack[-1]
         if w not in self.action[S]:
             print("Failed")
+            raise Exception("Parse Failed")
             return False
         if self.action[S][w][0] == Action.Reduce:
             while w in self.action[S] and self.action[S][w][0] == Action.Reduce:
                 rule = self.action[S][w][1]
                 A = rule.L
-                self.stateStack = self.stateStack[:-len(rule.R)]
-                self.symbolStack = self.symbolStack[:-len(rule.R)]
+                if rule.R[0] != self.empty:
+                    self.stateStack = self.stateStack[:-len(rule.R)]
+                    self.symbolStack = self.symbolStack[:-len(rule.R)]
                 S = self.stateStack[-1]
                 self.symbolStack.append(A)
                 self.stateStack.append(self.goto[S][A])

@@ -15,6 +15,7 @@ keywords = {"int", 'char', "float", 'void', 'for', "continue", "break", 'if', 'r
 class Element:
     def __init__(self, name):
         self.name = name
+        self.producers = []
         if name[0] == '[':
             self.code = Code.Variable
         elif name[0] == '"':
@@ -93,7 +94,7 @@ class Scanner:
                 return Token(Element('"#"'), "")
             if c == " ":
                 continue
-            if c in "+-*/=(){};<>|^&":
+            if c in "!,+-*/%=(){};<>|^&:\"":
                 Scanner.goback(file)
                 return Scanner.scanSymbol(file)
             elif c.isdigit():
@@ -105,7 +106,7 @@ class Scanner:
 
 
 if __name__ == "__main__":
-    f = open("test_cpp.cpp", "rb")
+    f = open("test.cpp", "rb")
     while True:
         token = Scanner.scan(f)
         print(token.elem, token.info)

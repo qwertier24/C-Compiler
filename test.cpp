@@ -1,5 +1,5 @@
 void func(int a, int b) {
-    printf("%d is greater than %d\n", a, b);
+
 }
 
 int main() {
