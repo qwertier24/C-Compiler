@@ -1,10 +1,10 @@
 # -*- coding: utf-8 -*-
 
 from enum import Enum
-from scanner import Code, Element
+import time
+from utils import Code, Element
 
 Action = Enum('Action', ('Reduce', 'Shift', 'Acc'))
-
 
 
 class Rule:
@@ -89,6 +89,8 @@ class ContextFreeLanguage:
                 emptiable = False
         if emptiable:
             firstSet.add(self.empty)
+        elif self.empty in firstSet:
+            firstSet.remove(self.empty)
         return firstSet
 
     def initFirst(self):
@@ -129,6 +131,8 @@ class ContextFreeLanguage:
                     for r in B.producers:
                         for b in f:
                             if b == self.empty:
+                                for e in slice:
+                                    print(e, end=' ')
                                 raise Exception("Found empty producers in closure calculation")
                             pos = 0
                             while pos < len(r.R) and r.R[pos] == self.empty:
@@ -217,9 +221,14 @@ class ContextFreeLanguage:
 
 
     def init(self):
+        t1 = time.time()
         self.initFirst()
+        t2 = time.time()
         self.initClan()
+        t3 = time.time()
         self.initActionGoto()
+        t4 = time.time()
+        print(t2-t1, t3-t2, t4-t3)
 
     def parse(self, sentence):
         i = 0
@@ -295,7 +304,7 @@ class ContextFreeLanguage:
                 self.symbolStack.append(A)
                 self.stateStack.append(self.goto[S][A])
                 S = self.stateStack[-1]
-                print(rule)
+                print("Reduction:", rule)
         S = self.stateStack[-1]
         if self.action[S][w][0] == Action.Shift:
             self.symbolStack.append(w)
