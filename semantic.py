@@ -20,10 +20,10 @@ class TriAddr:
         self.arg2 = arg2
         self.result = result
     def __str__(self):
-        return "%s|%s|%s|%s"%(self.op, str(self.arg1), str(self.arg2), str(self.result))
+        return "%10s|%10s|%10s|%10s"%(self.op, str(self.arg1), str(self.arg2), str(self.result))
 
 class SynInfo:
-    def __init__(self, name=""):
+    def __init__(self, name="", mold=None):
         self.code = []
         self.addr = 0
         self.mold = None
@@ -146,7 +146,8 @@ class Semantic:
             self.enterSymbol(rootInfo.name, rootInfo.mold, max(1, rootInfo.width*childInfo[3].width), [childInfo[3].width])
         else:
             self.enterSymbol(rootInfo.name, rootInfo.mold, rootInfo.width)
-    def f27(self, rootInfo, childInfo): # TODO
+    def f27(self, rootInfo, childInfo):
+        # [stmts] --> [stmt] [stmts]
         rootInfo.code += childInfo[0].code + childInfo[1].code
     def f28(self, rootInfo, childInfo):
         pass
@@ -155,29 +156,51 @@ class Semantic:
     def f30(self, rootInfo, childInfo):
         pass
     def f32(self, rootInfo, childInfo):
-        pass
+        rootInfo.code += childInfo[0].code
     def f33(self, rootInfo, childInfo):
         rootInfo.code += childInfo[0].code
     def f36(self, rootInfo, childInfo):
         pass
     def f40(self, rootInfo, childInfo):
-        pass
+        # [branch_stmt] --> "if" "(" [logical_expression] ")" [block_stmt] [result]
+        rootInfo.code += childInfo[2].code
+        rootInfo.code.append(TriAddr("goto>", childInfo[2].name, 0, "L"+str(self.labelCount)))
+        rootInfo.code += childInfo[4].code
+        rootInfo.code.append(TriAddr("label", None, None, "L"+str(self.labelCount)))
+        self.labelCount += 1
+        rootInfo.code += childInfo[5].code
     def f42(self, rootInfo, childInfo):
+        # [result] --> "$"
         pass
     def f44(self, rootInfo, childInfo):
-        pass
+        rootInfo.code += childInfo[0].code
+        rootInfo.name = childInfo[0].name
+        rootInfo.width = 1
+        rootInfo.mold = "char"
+    def f45(self, rootInfo, childInfo):
+        # [bool_expression] --> [bool_expression] [lop] [expression]
+        rootInfo.code += childInfo[0].code + childInfo[2].code
+        rootInfo.name = self.newTemp("char", 1)
+        rootInfo.code.append(TriAddr(childInfo[1].name, childInfo[0].name, childInfo[2].name, rootInfo.name))
     def f46(self, rootInfo, childInfo):
-        pass
+        rootInfo.code += childInfo[0].code
+        rootInfo.name = childInfo[0].name
+        rootInfo.width = 1
+        rootInfo.mold = "char"
+    def f47(self, rootInfo, childInfo):
+        rootInfo.name = "&&"
     def f54(self, rootInfo, childInfo):
-        pass
+        # [block_stmt] --> "{" [stmts] "}"
+        rootInfo.code += childInfo[1].code
     def f55(self, rootInfo, childInfo):
         pass
     def f57(self, rootInfo, childInfo):
         rootInfo.code += childInfo[0].code
         rootInfo.name = childInfo[0].name
     def f58(self, rootInfo, childInfo):
+        # [expression] --> [value] [compare_op] [value]
         rootInfo.code += childInfo[0].code + childInfo[2].code
-        rootInfo.name = self.newTemp()
+        rootInfo.name = self.newTemp("char", 1)
         rootInfo.code.append(TriAddr("goto"+childInfo[1].name, childInfo[0].name, childInfo[2].name, "L"+str(self.labelCount)))
         rootInfo.code.append(TriAddr("=", 0, None, rootInfo.name))
         rootInfo.code.append(TriAddr("goto", 0, None, "L"+str(self.labelCount+1)))
@@ -186,25 +209,33 @@ class Semantic:
         rootInfo.code.append(TriAddr("label", None, None, "L"+str(self.labelCount+1)))
         self.labelCount += 2
     def f59(self, rootInfo, childInfo):
+        # [expression] --> [value] [equal_op] [value]
         rootInfo.code += childInfo[0].code + childInfo[2].code
-        rootInfo.code.append(TriAddr(childInfo[1].name, childInfo, childInfo[0].name, childInfo[2].name, childInfo[0].name))
-    def f63(self, rootInfo, childInfo):
+        rootInfo.code.append(TriAddr(childInfo[1].name, childInfo[0].name, childInfo[2].name, childInfo[0].name))
+    def f61(self, rootInfo, childInfo):
+        # [compare_op] --> ">"
         rootInfo.name = ">"
+    def f63(self, rootInfo, childInfo):
+        rootInfo.name = "<"
     def f67(self, rootInfo, childInfo):
         rootInfo.name = "="
     def f73(self, rootInfo, childInfo):
-        rootInfo.name = self.newTemp("int", 4) # TODO
-        rootInfo.code += childInfo[0].code + childInfo[1].code
-        rootInfo.code.append(TriAddr("+", childInfo[0].name, childInfo[1].name, rootInfo.name))
-    def f76(self, rootInfo, childInfo):
-        rootInfo.name = 0
-    def f77(self, rootInfo, childInfo):
-        rootInfo.code += childInfo[0].code + childInfo[1].code
+        rootInfo.code += childInfo[0].code
         rootInfo.name = childInfo[0].name
-    def f81(self, rootInfo, childInfo):
-        pass
+        rootInfo.width = childInfo[0].width
+        rootInfo.mold = childInfo[0].mold
+    def f77(self, rootInfo, childInfo):
+        rootInfo.code += childInfo[0].code
+        rootInfo.name = childInfo[0].name
+        rootInfo.width = childInfo[0].width
+        rootInfo.mold = childInfo[0].mold
     def f83(self, rootInfo, childInfo):
-        pass
+        # [factor] --> "IDN" [call_func]
+        rootInfo.name = childInfo[0].name
+        symbol = self.tableStack[-1][rootInfo.name]
+        rootInfo.mold = symbol.mold
+        rootInfo.width = symbol.width
+        rootInfo.addr = symbol.addr
     def f84(self, rootInfo, childInfo):
         rootInfo.name = childInfo[0].name
         rootInfo.width = childInfo[0].width
@@ -277,7 +308,7 @@ class Semantic:
                 print("Reduction:", rule)
         S = self.stateStack[-1]
         if self.cfl.action[S][w][0] == Action.Shift:
-            self.symbolStack.append((w, SynInfo(token.info)))
+            self.symbolStack.append((w, SynInfo(token.info, token.elem.name[1:-1])))
             self.stateStack.append(self.cfl.action[S][w][1])
         # for i in range(len(self.stateStack)):
         #     self.printClosure(self.stateStack[i])
@@ -291,6 +322,7 @@ if __name__ == "__main__":
     semantic = Semantic("cfl.dump")
     while True:
         token = scanner.scan()
+        print(token.elem, token.info)
         semantic.onlineAnalyze(token)
         if token.info == "":
             break

@@ -38,10 +38,10 @@
 [branch_stmt] --> "if" "(" [logical_expression] ")" [block_stmt] [result] {f40()}
 [result] --> "else" [block_stmt] {f41()}
 [result] --> "$" {f42()}
-[logical_expression] --> "!" [expression] [bool_expression] {f43()}
-[logical_expression] --> [expression] [bool_expression] {f44()}
-[bool_expression] --> [lop] [expression] [bool_expression] {f45()}
-[bool_expression] --> "$" {f46()}
+[logical_expression] --> "!" [bool_expression] {f43()}
+[logical_expression] --> [bool_expression] {f44()}
+[bool_expression] --> [bool_expression] [lop] [expression] {f45()}
+[bool_expression] --> [expression] {f46()}
 [lop] --> "&&" {f47()}
 [lop] --> "||" {f48()}
 [branch_stmt] --> "switch" "(" "IDN" ")" "{" [case_stmt] [case_stmts] [default_stmt] "}" {f49()}
@@ -67,15 +67,13 @@
 [equal_op] --> "*=" {f70()}
 [equal_op] --> "/=" {f71()}
 [equal_op] --> "%=" {f72()}
-[value] --> [item] [value'] {f73()}
-[value'] --> "+" [item] [value'] {f74()}
-[value'] --> "-" [item] [value'] {f75()}
-[value'] --> "$" {f76()}
-[item] --> [factor] [item'] {f77()}
-[item'] --> "*" [factor] [item'] {f78()}
-[item'] --> "/" [factor] [item'] {f79()}
-[item'] --> "%" [factor] [item'] {f80()}
-[item'] --> "$" {f81()}
+[value] --> [item]{f73()}
+[value] --> [value] "+" [item] {f74()}
+[value] --> [value] "-" [item] {f75()}
+[item] --> [factor] {f77()}
+[item] --> [item] "*" [factor] {f78()}
+[item] --> [item] "/" [factor] {f79()}
+[item] --> [item] "%" [factor] {f80()}
 [factor] --> "(" [value] ")" {f82()}
 [factor] --> "IDN" [call_func] {f83()}
 [factor] --> [const] {f84()}
