@@ -16,12 +16,12 @@
 [block] --> "{" [define_stmts] [stmts] "}" {f18()}
 [define_stmts] --> [define_stmt] [define_stmts] {f19()}
 [define_stmts] --> "$" {f20()}
-[define_stmt] --> [vars] ";" {f21()}
+[define_stmt] --> [vars] ";"
+[vars] --> [type] "IDN" [init]
+[vars] --> [vars] "," "IDN" [init]
 [init] --> "=" [expression] {f22()}
 [init] --> "[" "INT10" "]" {f23()}
 [init] --> "$" {f24()}
-[vars] --> [type] "IDN" [init] {f25()}
-[vars] --> [vars] "," "IDN" [init] {f26()}
 [stmts] --> [stmt] [stmts] {f27()}
 [stmts] --> "$" {f28()}
 [stmt] --> [assign_stmt] {f29()}
@@ -52,9 +52,10 @@
 [block_stmt] --> "{" [stmts] "}" {f54()}
 [isnull_expr] --> [expression] {f55()}
 [isnull_expr] --> "$" {f56()}
-[expression] --> [value] {f57()}
-[expression] --> [value] [compare_op] [value] {f58()}
-[expression] --> [value] [equal_op] [value] {f59()}
+[expression] --> [value] [operation] {f57()}
+[operation] --> [compare_op] [value] {f58()}
+[operation] --> [equal_op] [value] {f59()}
+[operation] --> "$" {f60()}
 [compare_op] --> ">" {f61()}
 [compare_op] --> ">=" {f62()}
 [compare_op] --> "<" {f63()}

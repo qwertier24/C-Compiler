@@ -2,18 +2,23 @@
 
 from enum import Enum
 import time
-from utils import Code, Element
+from utils import Code, Element, Token
 
 Action = Enum('Action', ('Reduce', 'Shift', 'Acc'))
 
 
 class Rule:
-    def __init__(self, L, R):
+    def __init__(self, L, R, prod):
         self.L = L
         self.R = R
+        self.prod = prod
         print("new Rule:", L, end=' --> [')
-        for i in R:
-            print(i, end=' ')
+        for i in range(len(R)):
+            if i in self.prod:
+                print("{", self.prod[i], "}", end=' ')
+            print(self.R[i], end=' ')
+        if len(R) in self.prod:
+            print("{", self.prod[len(R)], "}", end=' ')
         print(']')
     def __str__(self):
         res = ""
@@ -50,6 +55,7 @@ class ContextFreeLanguage:
                 L = self.addElement(strL[i:j+1])
 
         R = []
+        prod = {}
         i = 0
         while i < len(strR):
             if strR[i] == '[':
@@ -64,9 +70,15 @@ class ContextFreeLanguage:
                     j += 1
                 R.append(self.addElement(strR[i:j+1]))
                 i = j+1
+            elif strR[i] == '{':
+                j = i + 1
+                while strR[j] != '}':
+                    j += 1
+                prod[len(R)]=strR[i+1:j]
+                i = j+1
             else:
                 i += 1
-        self.rules.append(Rule(L, R))
+        self.rules.append(Rule(L, R, prod))
         L.producers.append(self.rules[-1])
         return self.rules[-1]
     def addStarter(self, strL):
@@ -170,7 +182,7 @@ class ContextFreeLanguage:
                 for c in C:
                     print("(", c[0], c[1], c[2], end ='), \n')
                 print("}")
-        self.initialState = self.closure(frozenset({(self.rules[-1], 0, self.ender)}))
+        self.initialState = self.closure(frozenset({(self.starter.producers[0], 0, self.ender)}))
         self.C = {self.initialState:0}
         while True:
             D = set()

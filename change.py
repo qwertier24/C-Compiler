@@ -1,5 +1,5 @@
 import sys
-sys.stdin = open("c.txt", "r")
+sys.stdin = open("origin_grammar.txt", "r")
 sys.stdout = open("changed_c.txt", "w")
 
 V = set()
@@ -11,7 +11,8 @@ for line in sys.stdin:
     r = line[1].split(' ')
     V.add(l)
 
-sys.stdin = open("c.txt", "r")
+sys.stdin = open("origin_grammar.txt", "r")
+cnt = 0
 for line in sys.stdin:
     if line[-1] == '\n':
         line = line[:-1]
@@ -25,4 +26,5 @@ for line in sys.stdin:
                 print('[', s, ']', end=' ', sep='')
             else:
                 print('"', s, '"', end=' ', sep='')
-    print()
+    print( '{f' + str(cnt) + '()}')
+    cnt += 1

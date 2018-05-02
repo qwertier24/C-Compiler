@@ -12,6 +12,12 @@ Code = Enum('Code', ('Variable',
                      '"', 'for', "continue", "break", 'if', 'return', 'else', 'switch', 'case', 'while', 'do', 'default'))
 keywords = {"int", 'char', "float", 'void', 'for', "continue", "break", 'if', 'return', 'else', 'switch', 'case', 'while', 'do', 'default'}
 
+class Token:
+    def __init__(self, elem, info):
+        self.elem = elem
+        self.info = info
+
+
 class Element:
     def __init__(self, name):
         self.name = name
