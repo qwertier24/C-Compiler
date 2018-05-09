@@ -9,7 +9,7 @@ class Symbol:
         self.mold = "int"
         self.addr = addr
         self.width = width
-        self.dim = dim
+        self.dim = dim[:]
 
 SymbolTable = dict
 
@@ -56,25 +56,39 @@ class Semantic:
     def __init__(self, cfl_file_name):
         self.cfl = pickle.load(open(cfl_file_name, "rb"))
         self.stateStack = [self.cfl.initialState]
-        self.symbolStack = [Element('"#"')]
+        self.symbolStack = [(SynInfo(), Element('"#"'))]
         self.tableStack = [SymbolTable()]
         self.offsetStack = [0]
         self.tempCount = 0
         self.labelCount = 0
+    def isnum(self, elem):
+        return type(elem) == int or type(elem) == float
     def newTemp(self, mold, width):
         varName = "(" + str(self.tempCount) + ")"
         self.enterSymbol(varName, mold, width)
         self.tempCount += 1
         return varName
-    def getVar(self, varName):
-        return self.tableStack[-1][varName]
+    def getVar(self, varName, table=None):
+        if table == None:
+            table = self.tableStack[-1]
+        if varName not in table:
+            if ".." in table:
+                return self.getVar(varName, table[".."])
+            else:
+                raise Exception("No definition of " + str(varName))
+        else:
+            return table[varName]
     def printSymbolTable(self, table):
         for item in table:
+            if item == "..":
+                continue
             if type(table[item]) == Symbol:
                 print(item, table[item].mold, table[item].addr, table[item].width)
             else:
                 print(item)
         for item in table:
+            if item == "..":
+                continue
             if type(table[item]) == SymbolTable:
                 print("Table", item, ":")
                 self.printSymbolTable(table[item])
@@ -90,7 +104,7 @@ class Semantic:
         table[name] = Symbol(mold, self.offsetStack[-1], width, dim)
         self.offsetStack[-1] += width
     def addTable(self):
-        self.tableStack.append(self.tableStack[-1].copy())
+        self.tableStack.append({"..": self.tableStack[-1]})
         self.offsetStack.append(0)
     def f0(self, rootInfo, childInfo):
         rootInfo.code = childInfo[0].code + childInfo[1].code + childInfo[2].code
@@ -311,12 +325,26 @@ class Semantic:
         rootInfo.mold = childInfo[0].mold
     def f74(self, rootInfo, childInfo):
         # [value] --> [value] "+" [item]
-        rootInfo.code += childInfo[0].code
-        rootInfo.code += childInfo[2].code
-        rootInfo.name = self.newTemp(rootInfo.mold, rootInfo.width)
-        rootInfo.width = childInfo[0].width
-        rootInfo.mold = childInfo[0].mold
-        rootInfo.code.append(TriAddr("+", childInfo[0].name, childInfo[2].name, rootInfo.name))
+        if type(childInfo[0].name) == int and type(childInfo[2].name) == int:
+            rootInfo.name = childInfo[0].name + childInfo[2].name
+        else:
+            rootInfo.code += childInfo[0].code
+            rootInfo.code += childInfo[2].code
+            rootInfo.name = self.newTemp(rootInfo.mold, rootInfo.width)
+            rootInfo.width = childInfo[0].width
+            rootInfo.mold = childInfo[0].mold
+            rootInfo.code.append(TriAddr("+", childInfo[0].name, childInfo[2].name, rootInfo.name))
+    def f75(self, rootInfo, childInfo):
+        # [value] --> [value] "-" [item]
+        if isnum(childInfo[0].name) and isnum(childInfo[2].name):
+            rootInfo.name = childInfo[0].name - childInfo[2].name
+        else:
+            rootInfo.code += childInfo[0].code
+            rootInfo.code += childInfo[2].code
+            rootInfo.name = self.newTemp(rootInfo.mold, rootInfo.width)
+            rootInfo.width = childInfo[0].width
+            rootInfo.mold = childInfo[0].mold
+            rootInfo.code.append(TriAddr("+", childInfo[0].name, childInfo[2].name, rootInfo.name))
     def f77(self, rootInfo, childInfo):
         rootInfo.code += childInfo[0].code
         rootInfo.name = childInfo[0].name
@@ -324,28 +352,37 @@ class Semantic:
         rootInfo.mold = childInfo[0].mold
     def f78(self, rootInfo, childInfo):
         # [item] --> [item] "*" [factor]
-        rootInfo.code += childInfo[0].code
-        rootInfo.code += childInfo[2].code
-        rootInfo.mold = childInfo[0].mold
-        rootInfo.width = childInfo[0].width
-        rootInfo.name = self.newTemp(rootInfo.mold, rootInfo.width)
-        rootInfo.code.append(TriAddr("*", childInfo[0].name, childInfo[2].name, rootInfo.name))
+        if self.isnum(childInfo[0].name) and self.isnum(childInfo[2].name):
+            rootInfo.name = childInfo[0].name * childInfo[2].name
+        else:
+            rootInfo.code += childInfo[0].code
+            rootInfo.code += childInfo[2].code
+            rootInfo.mold = childInfo[0].mold
+            rootInfo.width = childInfo[0].width
+            rootInfo.name = self.newTemp(rootInfo.mold, rootInfo.width)
+            rootInfo.code.append(TriAddr("*", childInfo[0].name, childInfo[2].name, rootInfo.name))
     def f79(self, rootInfo, childInfo):
         # [item] --> [item] "/" [factor]
-        rootInfo.code += childInfo[0].code
-        rootInfo.code += childInfo[2].code
-        rootInfo.mold = childInfo[0].mold
-        rootInfo.width = childInfo[0].width
-        rootInfo.name = self.newTemp(rootInfo.mold, rootInfo.width)
-        rootInfo.code.append(TriAddr("/", childInfo[0].name, childInfo[2].name, rootInfo.name))
+        if self.isnum(childInfo[0].name) and self.isnum(childInfo[2].name):
+            rootInfo.name = childInfo[0].name // childInfo[2].name
+        else:
+            rootInfo.code += childInfo[0].code
+            rootInfo.code += childInfo[2].code
+            rootInfo.mold = childInfo[0].mold
+            rootInfo.width = childInfo[0].width
+            rootInfo.name = self.newTemp(rootInfo.mold, rootInfo.width)
+            rootInfo.code.append(TriAddr("/", childInfo[0].name, childInfo[2].name, rootInfo.name))
     def f80(self, rootInfo, childInfo):
-        # [item] --> [item] "/" [factor]
-        rootInfo.code += childInfo[0].code
-        rootInfo.code += childInfo[2].code
-        rootInfo.mold = childInfo[0].mold
-        rootInfo.width = childInfo[0].width
-        rootInfo.name = self.newTemp(rootInfo.mold, rootInfo.width)
-        rootInfo.code.append(TriAddr("%", childInfo[0].name, childInfo[2].name, rootInfo.name))
+        # [item] --> [item] "%" [factor]
+        if self.isnum(childInfo[0].name) and self.isnum(childInfo[2].name):
+            rootInfo.name = childInfo[0].name % childInfo[2].name
+        else:
+            rootInfo.code += childInfo[0].code
+            rootInfo.code += childInfo[2].code
+            rootInfo.mold = childInfo[0].mold
+            rootInfo.width = childInfo[0].width
+            rootInfo.name = self.newTemp(rootInfo.mold, rootInfo.width)
+            rootInfo.code.append(TriAddr("%", childInfo[0].name, childInfo[2].name, rootInfo.name))
     def f81(self, rootInfo, childInfo):
         # [not_null_es] --> [expression]
         rootInfo.code += childInfo[0].code
@@ -364,10 +401,9 @@ class Semantic:
             rootInfo.code.append(TriAddr("call", childInfo[0].name, childInfo[1].width, None))
         else:
             rootInfo.name = childInfo[0].name
-            symbol = self.tableStack[-1][rootInfo.name]
+            symbol = self.getVar(rootInfo.name)
             rootInfo.mold = symbol.mold
             rootInfo.width = symbol.width
-            rootInfo.addr = symbol.addr
     def f84(self, rootInfo, childInfo):
         rootInfo.name = childInfo[0].name
         rootInfo.width = childInfo[0].width
@@ -442,8 +478,8 @@ class Semantic:
         rootInfo.dim = rootInfo.dim[1:]
     def onlineAnalyze(self, token):
         w = token.elem
-        print("---------------------------")
-        print(w)
+        # print("---------------------------")
+        # print(w)
         S = self.stateStack[-1]
         if w not in self.cfl.action[S]:
             print("Failed")
@@ -462,11 +498,11 @@ class Semantic:
                         f = getattr(self, rule.prod[i][:-2])
                         f(synInfo, [x[1] for x in ([] if rule.R[0] == self.cfl.empty else self.symbolStack[-len(rule.R):])])
 
-                print("---")
-                print(synInfo.name, synInfo.mold, synInfo.addr, synInfo.dim)
-                for c in synInfo.code:
-                    print(c)
-                print("---")
+                # print("---")
+                # print(synInfo.name, synInfo.mold, synInfo.addr, synInfo.dim)
+                # for c in synInfo.code:
+                #     print(c)
+                # print("---")
                 if rule.R[0] != self.cfl.empty:
                     if len(self.symbolStack) < len(rule.R):
                         raise Exception("Fewer symbols than needed")
@@ -480,7 +516,7 @@ class Semantic:
                     self.cfl.printClosure(S)
                     raise Exception(A)
                 S = self.stateStack[-1]
-                print("Reduction:", rule)
+                # print("Reduction:", rule)
         S = self.stateStack[-1]
         if self.cfl.action[S][w][0] == Action.Shift:
             self.symbolStack.append((w, SynInfo(token.info, token.elem.name[1:-1])))
@@ -488,16 +524,16 @@ class Semantic:
         # for i in range(len(self.stateStack)):
         #     self.printClosure(self.stateStack[i])
         #     print(self.symbolStack[i])
-        print("---------------------------")
+        # print("---------------------------")
         if self.cfl.action[S][w][0] == Action.Acc:
-            print("OK")
+            print("OK: Semantic Analysis Finished!")
 
 if __name__ == "__main__":
     scanner = Scanner(open("test.cpp", "rb"))
     semantic = Semantic("cfl.dump")
     while True:
         token = scanner.scan()
-        print(token.elem, token.info, token.row, token.col)
+        # print(token.elem, token.info, token.row, token.col)
         semantic.onlineAnalyze(token)
         if token.info == "":
             break

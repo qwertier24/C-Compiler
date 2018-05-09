@@ -2,10 +2,11 @@
 
 from scanner import Scanner
 from CFL import ContextFreeLanguage
-from semantic import Semantic
+from semantic import Semantic, TriAddr, SynInfo, SymbolTable
+import sys
 import pickle
 
-if __name__ == "__main__":
+def getCFL(fileName):
     grammarFile = open("grammar.txt", "r")
     cfl = ContextFreeLanguage()
 
@@ -20,14 +21,39 @@ if __name__ == "__main__":
     cfl.addEnder('"#"')
     cfl.init()
     pickle.dump(cfl, open("cfl.dump", "wb"))
+    return cfl
 
 
-    testFile = open("test.cpp", "rb")
-    scanner = Scanner(testFile)
-    flag = True
+def outputAssembler(codes, table, output):
+    output.write(".data\n")
+    for globalVar in table:
+        if type(table[globalVar]) == Symbol:
+            print(".global " + globalVar + "\n")
+            if table[globalVar].mold == "int":
+                print("")
+    for code3 in codes:
+        if code3.op == "label":
+            output.write(code3.result + ":" + "\n")
+        elif code3.op == "goto":
+            output.write("  goto " + code3.result + "\n")
+        elif code3.op == "":
+            output.write("  ")
+
+
+
+if __name__ == "__main__":
+    # cfl = getCFL()
+    scanner = Scanner(open("test.cpp", "rb"))
+    semantic = Semantic("cfl.dump")
+
     while True:
         token = scanner.scan()
-        cfl.onlineParse(token, flag)
-        flag = False
+        semantic.onlineAnalyze(token)
         if token.info == "":
             break
+
+    codes = semantic.symbolStack[-1][1].code
+    table = semantic.tableStack[-1]
+
+    output = open("test.asm", "w")
+    outputAssembler(codes, table, sys.stdout)

@@ -60,8 +60,6 @@ class Scanner:
             else:
                 self.goback()
                 break
-            print("symbol 1:", symbol)
-        print("symbol:", symbol)
         return Token(Element('"' + symbol + '"'), symbol, self.row, self.col)
 
     def scan(self):
