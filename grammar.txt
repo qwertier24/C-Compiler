@@ -1,4 +1,4 @@
-[S] --> [func] [funcs] {f0()}
+[S] --> [define_stmts] [func] [funcs] {f0()}
 [funcs] --> [func] [funcs] {f1()}
 [funcs] --> "$" {f2()}
 [func] --> [type] "IDN" [func_initializer] "(" [args] ")" [func_body] {f3()}
@@ -18,8 +18,9 @@
 [define_stmts] --> "$" {f20()}
 [define_stmt] --> [vars] ";" {f21()}
 [init] --> "=" [expression] {f22()}
-[init] --> "[" "INT10" "]" {f23()}
-[init] --> "$" {f24()}
+[arr_init] --> [arr_init] "[" "INT10" "]" {f23()}
+[arr_init] --> "$" {f24()}
+[init] --> [arr_init] {f100()}
 [vars] --> [type] "IDN" [init] {f25()}
 [vars] --> [vars] "," "IDN" [init] {f26()}
 [stmts] --> [stmt] [stmts] {f27()}
@@ -76,12 +77,16 @@
 [item] --> [item] "%" [factor] {f80()}
 [factor] --> "(" [value] ")" {f82()}
 [factor] --> "IDN" [call_func] {f83()}
+[factor] --> [arr_find] {f99()}
 [factor] --> [const] {f84()}
 [call_func] --> "(" [es] ")" {f85()}
 [call_func] --> "$" {f86()}
-[es] --> [isnull_expr] [isnull_es] {f87()}
-[isnull_es] --> "," [isnull_expr] [isnull_es] {f88()}
-[isnull_es] --> "$" {f89()}
+[arr_find] --> "IDN" "[" [expression] "]" {f101()}
+[arr_find] --> [arr_find] "[" [expression] "]" {f102()}
+[es] --> [not_null_es] {f87()}
+[not_null_es] --> [expression] {f81()}
+[not_null_es] --> [not_null_es] "," [expression] {f88()}
+[es] --> "$" {f89()}
 [const] --> [num_const] {f90()}
 [const] --> "FLOAT" {f91()}
 [const] --> "CHAR" {f92()}

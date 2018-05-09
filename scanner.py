@@ -5,10 +5,19 @@ from utils import Code, Element, keywords, Token
 class Scanner:
     def __init__(self, file):
         self.file = file
+        self.row = 1
+        self.col = 1
     def goback(self):
+        self.col -= 1
         self.file.seek(-1, 1)
     def getc(self):
-        return str(self.file.read(1), encoding='utf-8')
+        c = str(self.file.read(1), encoding='utf-8')
+        if c == '\n':
+            self.row += 1
+            self.col = 0
+        else:
+            self.col += 1
+        return c
 
     def scanIdentifier(self):
         s = ""
@@ -21,9 +30,9 @@ class Scanner:
                 break
             s += c
         if s in keywords:
-            return Token(Element('"' + s + '"'), s)
+            return Token(Element('"' + s + '"'), s, self.row, self.col)
         else:
-            return Token(Element('"IDN"'), s)
+            return Token(Element('"IDN"'), s, self.row, self.col)
 
 
     def scanInteger(self):
@@ -35,7 +44,7 @@ class Scanner:
             else:
                 self.goback()
                 break
-        return Token(Element('"INT10"'), number)
+        return Token(Element('"INT10"'), number, self.row, self.col)
 
     def scanSymbol(self):
         symbol = ""
@@ -53,13 +62,13 @@ class Scanner:
                 break
             print("symbol 1:", symbol)
         print("symbol:", symbol)
-        return Token(Element('"' + symbol + '"'), symbol)
+        return Token(Element('"' + symbol + '"'), symbol, self.row, self.col)
 
     def scan(self):
         while True:
             c = self.getc()
             if c == "":
-                return Token(Element('"#"'), "")
+                return Token(Element('"#"'), "", self.row, self.col)
             if c == " ":
                 continue
             if c in "!,+-*/%=(){}[];<>|^&:\"":

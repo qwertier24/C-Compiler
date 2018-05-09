@@ -13,9 +13,11 @@ Code = Enum('Code', ('Variable',
 keywords = {"int", 'char', "float", 'void', 'for', "continue", "break", 'if', 'return', 'else', 'switch', 'case', 'while', 'do', 'default'}
 
 class Token:
-    def __init__(self, elem, info):
+    def __init__(self, elem, info, row, col):
         self.elem = elem
         self.info = info
+        self.row = row
+        self.col = col
 
 
 class Element:
