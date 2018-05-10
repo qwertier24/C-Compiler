@@ -37,14 +37,28 @@ class Scanner:
 
     def scanInteger(self):
         number = 0
+        isDecimal = False
+        decimal = 0
+        factor = 1
         while True:
             c = self.getc()
             if c.isdigit():
-                number = number * 10 + int(c)
+                if not decimal:
+                    number = number * 10 + int(c)
+                else:
+                    factor /= 10
+                    decimal = decimal + factor * int(c)
+            elif c == '.':
+                if isDecimal == True:
+                    raise Exception("Repeated '.'!")
+                isDecimal = True
             else:
                 self.goback()
                 break
-        return Token(Element('"INT10"'), number, self.row, self.col)
+        if isDecimal:
+            return Token(Element('"FLOAT"'), number, self.row, self.col)
+        else:
+            return Token(Element('"INT10"'), number, self.row, self.col)
 
     def scanSymbol(self):
         symbol = ""

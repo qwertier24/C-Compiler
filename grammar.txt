@@ -7,10 +7,10 @@
 [type] --> "char" {f7()}
 [type] --> "float" {f8()}
 [type] --> "void" {f10()}
-[args] --> [type] "IDN" [arg] {f12()}
-[args] --> "$" {f13()}
-[arg] --> "," [type] "IDN" [arg] {f14()}
-[arg] --> "$" {f15()}
+[args] --> "$" {f12()}
+[args] --> [arg] {f13()}
+[arg] --> [type] "IDN" {f14()}
+[arg] --> [arg] "," [type] "IDN" {f15()}
 [func_body] --> ";" {f16()}
 [func_body] --> [block] {f17()}
 [block] --> "{" [define_stmts] [stmts] "}" {f18()}
