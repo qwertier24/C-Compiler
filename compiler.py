@@ -57,7 +57,11 @@ def getop(op):
     elif op == '!=':
         return "jnz"
 
-def getaddr(var, table, output):
+def getaddr(var, table, output, des=None):
+    if des != None:
+        output.write("  movl %s, %s\n"%(getaddr(var, table, output, None), des))
+        return des
+
     if type(var) == int or type(var) == float:
         return "$"+str(var)
     elif "[" in var:
@@ -95,26 +99,32 @@ def outputAssembler(codes, table, output):
 
     output.write(".section .code:\n")
     funcTable = 0
+    dep = 0
     for code3 in codes:
         print(code3, "---")
         if code3.op == "function":
-            output.write(".globl %s\n"%(code3.result))
+            output.write(".globl %s\n%s:\n"%(code3.result, code3.result))
             output.write("  pushl %ebp\n  movl %esp, %ebp\n")
             funcTable = table[code3.result]
+            dep = 0
+            for name in funcTable:
+                if type(funcTable[name]) == Symbol:
+                    dep = max(dep, funcTable[name].width + funcTable[name].addr)
+                    print(funcTable[name].width, funcTable[name].addr, name)
+            output.write("  subl $%d, %%esp\n"%(dep))
         elif code3.op == "endf":
             output.write("  movl %ebp, %esp\n  popl %ebp\n")
             output.write("  ret\n\n")
         elif code3.op in "+-*/%":
-            var1 = getaddr(code3.arg1, funcTable, output)
-            var2 = getaddr(code3.arg2, funcTable, output)
+            var1 = getaddr(code3.arg1, funcTable, output, "%eax")
+            var2 = getaddr(code3.arg2, funcTable, output, "%ebx")
             res = getaddr(code3.result, funcTable, output)
             # if var1.mold == "int" and var2.mold == "int" and res.mold == "int":
             if code3.op in "+-":
-                output.write("  movl %s, %s\n"%(var1, res))
-                output.write("  %s %s, %s\n"%(getop(code3.op), var2, res))
+                output.write("  movl %%eax, %s\n"%(res))
+                output.write("  %s %%ebx, %s\n"%(getop(code3.op), res))
             if code3.op in "*/%":
                 output.write("  movl $0, %edx\n")
-                output.write("  movl %s, %%eax\n"%(var1))
                 output.write("  %s %s\n"%(getop(code3.op), var2))
                 if code3.op in '*/':
                     output.write("  movl %%eax, %s\n"%(res))
@@ -125,25 +135,31 @@ def outputAssembler(codes, table, output):
         elif code3.op == "goto":
             output.write("  jmp " + code3.result + "\n")
         elif code3.op[:4] == "goto":
-            var1 = getaddr(code3.arg1, funcTable, output)
-            var2 = getaddr(code3.arg2, funcTable, output)
+            var1 = getaddr(code3.arg1, funcTable, output, "%eax")
+            var2 = getaddr(code3.arg2, funcTable, output, "%ebx")
             res = code3.result
-            output.write("  cmpl %s, %s\n"%(var1, var2))
+            output.write("  cmpl %eax, %ebx\n")
             output.write("  %s %s\n"%(getop(code3.op[4:]), res))
         elif code3.op == "=" or code3.op == ":=":
-            var1 = getaddr(code3.arg1, funcTable, output)
+            var1 = getaddr(code3.arg1, funcTable, output, "%eax")
             res = getaddr(code3.result, funcTable, output)
-            output.write("  movl %s, %s\n"%(var1, res))
+            output.write("  movl %%eax, %s\n"%(res))
         elif code3.op in {"+=", "-="}:
-            var1 = getaddr(code3.arg1, funcTable, output)
+            var1 = getaddr(code3.arg1, funcTable, output, "%eax")
             res = getaddr(code3.result, funcTable, output)
-            output.write("  addl %s, %s\n"%(var1, res))
+            output.write("  addl %%eax, %s\n"%(res))
         elif code3.op == "return":
             output.write("  movl %ebp, %esp\n  popl %ebp\n")
             if code3.arg1 != None:
                 var1 = getaddr(code3.arg1, funcTable, output)
                 output.write("  movl %s, %%eax\n"%(var1))
             output.write("  ret\n")
+        elif code3.op == "param":
+            var1 = getaddr(code3.arg1, funcTable, output, "%eax")
+            output.write("  pushl %eax\n")
+        elif code3.op == "call":
+            output.write("  call %s\n"%(code3.arg1))
+
 
 
 if __name__ == "__main__":

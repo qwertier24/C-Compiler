@@ -278,7 +278,7 @@ class Semantic:
     def f44(self, rootInfo, childInfo):
         rootInfo.code += childInfo[0].code
         rootInfo.name = childInfo[0].name
-        rootInfo.width = 1
+        rootInfo.width = 4
         rootInfo.mold = "char"
     def f45(self, rootInfo, childInfo):
         # [bool_expression] --> [bool_expression] [lop] [expression]
@@ -287,7 +287,7 @@ class Semantic:
             rootInfo.code.append(TriAddr("goto==", childInfo[0].name, 0, "L"+str(self.labelCount)))
             rootInfo.code += childInfo[2].code
             rootInfo.code.append(TriAddr("goto==", childInfo[2].name, 0, "L"+str(self.labelCount)))
-            rootInfo.name = self.newTemp("char", 1)
+            rootInfo.name = self.newTemp("char", 4)
             rootInfo.code.append(TriAddr("=", 1, None, rootInfo.name))
             rootInfo.code.append(TriAddr("goto", None, None, "L" + str(self.labelCount+1)))
             rootInfo.code.append(TriAddr("label", None, None, "L"+str(self.labelCount)))
@@ -298,7 +298,7 @@ class Semantic:
             rootInfo.code.append(TriAddr("goto>", childInfo[0].name, 0, "L"+str(self.labelCount)))
             rootInfo.code += childInfo[2].code
             rootInfo.code.append(TriAddr("goto>", childInfo[2].name, 0, "L"+str(self.labelCount)))
-            rootInfo.name = self.newTemp("char", 1)
+            rootInfo.name = self.newTemp("char", 4)
             rootInfo.code.append(TriAddr("=", 0, None, rootInfo.name))
             rootInfo.code.append(TriAddr("goto", None, None, "L" + str(self.labelCount+1)))
             rootInfo.code.append(TriAddr("label", None, None, "L"+str(self.labelCount)))
@@ -308,7 +308,7 @@ class Semantic:
     def f46(self, rootInfo, childInfo):
         rootInfo.code += childInfo[0].code
         rootInfo.name = childInfo[0].name
-        rootInfo.width = 1
+        rootInfo.width = 4
         rootInfo.mold = "char"
     def f47(self, rootInfo, childInfo):
         rootInfo.name = "&&"
@@ -329,7 +329,7 @@ class Semantic:
     def f58(self, rootInfo, childInfo):
         # [expression] --> [value] [compare_op] [value]
         rootInfo.code += childInfo[0].code + childInfo[2].code
-        rootInfo.name = self.newTemp("char", 1)
+        rootInfo.name = self.newTemp("char", 4)
         rootInfo.code.append(TriAddr("goto"+childInfo[1].name, childInfo[0].name, childInfo[2].name, "L"+str(self.labelCount)))
         rootInfo.code.append(TriAddr("=", 0, None, rootInfo.name))
         rootInfo.code.append(TriAddr("goto", 0, None, "L"+str(self.labelCount+1)))
