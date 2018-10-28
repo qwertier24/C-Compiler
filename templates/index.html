@@ -1,0 +1,20 @@
+{% extends "base.html" %}
+
+{% block head %}
+<title>一个C编译器</title>
+<script src="/static/js/index.js"></script>
+{% endblock %}
+
+{% block body %}
+<div style="width:35%;height:100%;display:inline-block;">
+    <textarea id="codes" style="width:95%;height:70%"></textarea>
+    <textarea id="input" style="width:95%;height:20%"></textarea>
+</div>
+<div style="width:15%;height:100%;display:inline-block;">
+    <button id="run" style="width:95%">编译并运行</button>
+    <button id="compile" style="width:95%">生成汇编</button>
+</div>
+<div style="width:35%;height:100%;display:inline-block;">
+  <textarea id="output" style="width:95%;height:90%"></textarea>
+</div>
+{% endblock %}
